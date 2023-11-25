@@ -1,0 +1,32 @@
+name: "Scale down config"
+assumedRoleArn: "arn:aws:iam::123456789012:role/ScaleUpRole"
+scalingRegions:
+  - region: "us-east-1"
+    serviceScaleConfigs:
+      - service: "Kinesis"
+        streamArn: "arn:aws:kinesis:us-east-1:123456789012:stream/ScaleUpStream"
+        desiredShardCount: 1
+      - service: "DynamoDB"
+        tableName: "ScaleUpTable"
+        isIndex: false
+        rcu:
+          minProvisionedCapacity: 1
+          maxProvisionedCapacity: 100
+        wcu:
+          minProvisionedCapacity: 1
+          maxProvisionedCapacity: 100
+
+  - region: "us-west-2"
+    serviceScaleConfigs:
+      - service: "Kinesis"
+        streamArn: "arn:aws:kinesis:us-west-2:123456789012:stream/ScaleUpStream"
+        desiredShardCount: 1
+      - service: "DynamoDB"
+        tableName: "ScaleUpTable"
+        isIndex: false
+        rcu:
+          minProvisionedCapacity: 1
+          maxProvisionedCapacity: 100
+        wcu:
+          minProvisionedCapacity: 1
+          maxProvisionedCapacity: 100
