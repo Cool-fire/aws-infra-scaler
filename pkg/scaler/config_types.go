@@ -45,7 +45,7 @@ func (s *ScalingRegion) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 				serviceConfig, err := convertMapToConfig(v)
 				if err != nil {
-					return fmt.Errorf("error converting service config: %w", err)
+					return err
 				}
 
 				s.ServiceScaleConfigs = append(s.ServiceScaleConfigs, serviceConfig)
@@ -116,16 +116,38 @@ type WCU struct {
 	MaxProvisionedCapacity int `mapstructure:"maxProvisionedCapacity"`
 }
 
+func decodeConfig(decoderConfig *mapstructure.DecoderConfig, data map[string]interface{}) error {
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return fmt.Errorf("error creating decoder: %w", err)
+	}
+
+	err = decoder.Decode(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 	s, ok := data["service"].(string)
 	if !ok || s == "" {
 		return nil, fmt.Errorf("config error: Service field is missing or string is empty")
 	}
 
+	decoderConfig := mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		ErrorUnused:      true,
+		ErrorUnset:       true,
+	}
+
 	switch s {
 	case "Kinesis":
 		var kinesisServiceScalingConfig KinesisServiceScalingConfig
-		err := mapstructure.Decode(data, &kinesisServiceScalingConfig)
+		decoderConfig.Result = &kinesisServiceScalingConfig
+
+		err := decodeConfig(&decoderConfig, data)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding Kinesis service scaling config: %w", err)
 		}
@@ -133,15 +155,19 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 
 	case "Ec2":
 		var ec2ServiceScalingConfig EC2ServiceScalingConfig
-		err := mapstructure.Decode(data, &ec2ServiceScalingConfig)
+		decoderConfig.Result = &ec2ServiceScalingConfig
+
+		err := decodeConfig(&decoderConfig, data)
 		if err != nil {
-			return nil, fmt.Errorf("error decoding EC2 service scaling config: %w", err)
+			return nil, fmt.Errorf("error decoding Ec2 service scaling config: %w", err)
 		}
 		return ec2ServiceScalingConfig, nil
 
 	case "ElasticCache":
 		var elasticCacheServiceScalingConfig ElasticCacheServiceScalingConfig
-		err := mapstructure.Decode(data, &elasticCacheServiceScalingConfig)
+		decoderConfig.Result = &elasticCacheServiceScalingConfig
+
+		err := decodeConfig(&decoderConfig, data)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding ElasticCache service scaling config: %w", err)
 		}
@@ -149,7 +175,9 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 
 	case "DynamoDB":
 		var dynamoDBServiceScalingConfig DynamoDBServiceScalingConfig
-		err := mapstructure.Decode(data, &dynamoDBServiceScalingConfig)
+		decoderConfig.Result = &dynamoDBServiceScalingConfig
+
+		err := decodeConfig(&decoderConfig, data)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding DynamoDB service scaling config: %w", err)
 		}
