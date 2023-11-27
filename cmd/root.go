@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/Cool-fire/aws-infra-scaler/pkg/scaler"
+	"github.com/Cool-fire/aws-infra-scaler/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 	Short: "AWS Auto Scaler CLI",
 	Long:  "AWS Auto Scaler CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := scaler.ScaleApplication(options.scaleUpFlag, options.configPath)
+		err := pkg.ScaleApplication(options.scaleUpFlag, options.configPath)
 		if err != nil {
 			panic(err)
 		}

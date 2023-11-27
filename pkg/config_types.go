@@ -1,4 +1,4 @@
-package scaler
+package pkg
 
 import (
 	"fmt"
