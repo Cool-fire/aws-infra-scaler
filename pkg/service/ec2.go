@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
-	"github.com/Cool-fire/aws-infra-scaler/pkg/errors"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 )
 
@@ -12,7 +11,7 @@ type EC2Service struct {
 	Client autoscaling.Client
 }
 
-func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig) *errors.ScalingFailureError {
+func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig) *ScalingFailureError {
 	err := validateEc2ScalingConfig(ec2ClientConfig)
 	if err != nil {
 		return err
@@ -32,7 +31,7 @@ func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.E
 	_, scaleError := ec2.Client.UpdateAutoScalingGroup(ctx, &input)
 
 	if scaleError != nil {
-		return &errors.ScalingFailureError{
+		return &ScalingFailureError{
 			ServiceName:  EC2,
 			IdentifierId: ec2ClientConfig.AsgName,
 			Reason:       scaleError.Error(),
@@ -42,9 +41,9 @@ func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.E
 	return nil
 }
 
-func validateEc2ScalingConfig(clientConfig config.EC2ServiceScalingConfig) *errors.ScalingFailureError {
+func validateEc2ScalingConfig(clientConfig config.EC2ServiceScalingConfig) *ScalingFailureError {
 	if clientConfig.AsgName == "" || clientConfig.DesiredCount <= 0 || clientConfig.MaxCount <= 0 || clientConfig.MinCount <= 0 {
-		return &errors.ScalingFailureError{
+		return &ScalingFailureError{
 			ServiceName:  EC2,
 			IdentifierId: clientConfig.AsgName,
 			Reason:       "Invalid scaling config",

@@ -1,12 +1,11 @@
-package errors
+package service
 
 import (
 	"fmt"
-	"github.com/Cool-fire/aws-infra-scaler/pkg/service"
 )
 
 type ScalingFailureError struct {
-	ServiceName  service.Service
+	ServiceName  Service
 	IdentifierId string
 	Reason       string
 }

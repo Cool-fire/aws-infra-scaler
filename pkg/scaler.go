@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
-	"github.com/Cool-fire/aws-infra-scaler/pkg/errors"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/service"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"sync"
@@ -141,7 +140,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 	default:
 		fmt.Println("Unknown service")
-		resultChan <- &errors.ScalingFailureError{
+		resultChan <- &service.ScalingFailureError{
 			ServiceName:  "Unknown",
 			IdentifierId: "Unknown",
 			Reason:       "Unknown service",

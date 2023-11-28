@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
-	"github.com/Cool-fire/aws-infra-scaler/pkg/errors"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
 )
 
@@ -21,7 +20,7 @@ type ElasticCacheService struct {
 	Client elasticache.Client
 }
 
-func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticCacheServiceScalingConfig, isScalingUp bool) *errors.ScalingFailureError {
+func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticCacheServiceScalingConfig, isScalingUp bool) *ScalingFailureError {
 	err := validateElasticCacheScalingConfig(c, isScalingUp, getElasticCacheEngine(c.Engine))
 	if err != nil {
 		return err
@@ -37,7 +36,7 @@ func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticC
 	return nil
 }
 
-func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *errors.ScalingFailureError {
+func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *ScalingFailureError {
 
 	nodeCount := int32(clientConfig.NodeCount)
 	applyImmediately := true
@@ -52,14 +51,14 @@ func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScal
 	}
 
 	_, err := client.ModifyReplicationGroupShardConfiguration(ctx, &input)
-	return &errors.ScalingFailureError{
+	return &ScalingFailureError{
 		ServiceName:  ElasticCache,
 		IdentifierId: clientConfig.ClusterId,
 		Reason:       err.Error(),
 	}
 }
 
-func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *errors.ScalingFailureError {
+func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *ScalingFailureError {
 	nodeCount := int32(clientConfig.NodeCount)
 	applyImmediately := true
 	input := elasticache.ModifyCacheClusterInput{
@@ -73,7 +72,7 @@ func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheService
 	}
 
 	_, err := client.ModifyCacheCluster(ctx, &input)
-	return &errors.ScalingFailureError{
+	return &ScalingFailureError{
 		ServiceName:  ElasticCache,
 		IdentifierId: clientConfig.ClusterId,
 		Reason:       err.Error(),
@@ -91,8 +90,8 @@ func getElasticCacheEngine(s string) ElasticCacheEngine {
 	}
 }
 
-func validateElasticCacheScalingConfig(clientConfig config.ElasticCacheServiceScalingConfig, isScalingUp bool, engine ElasticCacheEngine) *errors.ScalingFailureError {
-	err := &errors.ScalingFailureError{
+func validateElasticCacheScalingConfig(clientConfig config.ElasticCacheServiceScalingConfig, isScalingUp bool, engine ElasticCacheEngine) *ScalingFailureError {
+	err := &ScalingFailureError{
 		ServiceName:  ElasticCache,
 		IdentifierId: clientConfig.ClusterId,
 		Reason:       "Invalid scaling config",
