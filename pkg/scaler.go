@@ -3,8 +3,10 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"gopkg.in/yaml.v3"
-	"os"
+	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
+	"github.com/Cool-fire/aws-infra-scaler/pkg/errors"
+	"github.com/Cool-fire/aws-infra-scaler/pkg/service"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"sync"
 )
 
@@ -14,8 +16,12 @@ type ScalingResult struct {
 	err     error
 }
 
+var assumeRoleArn string
+
 func ScaleApplication(shouldScaleUp bool, configPath string) error {
-	scalingConfig, err := readConfig(configPath)
+	scalingConfig, err := config.ReadConfig(configPath)
+	assumeRoleArn = scalingConfig.AssumedRoleArn
+
 	if err != nil {
 		return fmt.Errorf("error reading config: %w", err)
 	}
@@ -23,7 +29,7 @@ func ScaleApplication(shouldScaleUp bool, configPath string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	resultChan := make(chan int)
+	resultChan := make(chan error)
 
 	go func() {
 		defer close(resultChan)
@@ -51,47 +57,57 @@ func ScaleApplication(shouldScaleUp bool, configPath string) error {
 	}
 }
 
-func scaleRegion(ctx context.Context, scalingRegion ScalingRegion, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan int) {
+func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan error) {
 	defer wg.Done()
 
 	var serviceWg sync.WaitGroup
+	awsCreds, _ := service.NewConfig(scalingRegion.Region, assumeRoleArn)
 
 	for _, serviceScaleConfig := range scalingRegion.ServiceScaleConfigs {
 		serviceWg.Add(1)
-		go scaleService(ctx, serviceScaleConfig, shouldScaleUp, &serviceWg, resultChan)
+		go scaleService(ctx, awsCreds, serviceScaleConfig, shouldScaleUp, &serviceWg, resultChan)
 	}
 
 	serviceWg.Wait()
 	fmt.Println("done scaling region ", scalingRegion.Region)
 }
 
-func scaleService(ctx context.Context, serviceScaleConfig interface{}, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan int) {
+func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan error) {
 	defer wg.Done()
 
 	switch serviceScaleConfig.(type) {
-	case KinesisServiceScalingConfig:
-		fmt.Println("Scaling Kinesis")
-		resultChan <- 1
-	case EC2ServiceScalingConfig:
-		fmt.Println("Scaling EC2")
-		resultChan <- 2
+	case config.KinesisServiceScalingConfig:
+		kinesisClient := service.NewKinesisClient(awsCreds)
+		kinesisClientConfig := serviceScaleConfig.(config.KinesisServiceScalingConfig)
+		err := service.ScaleKinesisService(ctx, kinesisClientConfig, kinesisClient)
+		if err != nil {
+			fmt.Println("Error scaling Kinesis service: ", err)
+			resultChan <- err
+		}
+
+	case config.EC2ServiceScalingConfig:
+		autoScalingClient := service.NewAutoScalingClient(awsCreds)
+		ec2ClientConfig := serviceScaleConfig.(config.EC2ServiceScalingConfig)
+		err := service.ScaleEc2Service(ctx, ec2ClientConfig, autoScalingClient)
+		if err != nil {
+			fmt.Println("Error scaling EC2 service: ", err)
+			resultChan <- err
+		}
+
+	case config.ElasticCacheServiceScalingConfig:
+		fmt.Println("Scaling ElasticCache")
+		resultChan <- nil
+
+	case config.DynamoDBServiceScalingConfig:
+		fmt.Println("Scaling DynamoDB")
+		resultChan <- nil
+
 	default:
 		fmt.Println("Unknown service")
-		resultChan <- 3
+		resultChan <- &errors.ScalingFailureError{
+			ServiceName:  "Unknown",
+			IdentifierId: "Unknown",
+			Reason:       "Unknown service",
+		}
 	}
-}
-
-func readConfig(configPath string) (*ScalingConfig, error) {
-	fmt.Println("Reading config from path: ", configPath)
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading config file: %w", err)
-	}
-
-	var scalingConfig ScalingConfig
-	if err := yaml.Unmarshal(data, &scalingConfig); err != nil {
-		return nil, fmt.Errorf("error decoding config file: %w", err)
-	}
-
-	return &scalingConfig, nil
 }
