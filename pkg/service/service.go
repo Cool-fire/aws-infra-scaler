@@ -51,6 +51,8 @@ func NewConfig(region string, assumeRoleArn string) (*aws.Config, error) {
 	}
 
 	cfg.Credentials = creds
+	cfg.Region = region
+
 	return &cfg, nil
 }
 
