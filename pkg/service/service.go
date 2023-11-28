@@ -80,18 +80,18 @@ func assumeRoleCreds(ctx context.Context, cfg aws.Config, assumeRoleArn string) 
 	return credsProvider, nil
 }
 
-func NewKinesisClient(cfg *aws.Config) kinesis.Client {
-	return *kinesis.NewFromConfig(*cfg)
+func NewKinesisClient(cfg *aws.Config) *kinesis.Client {
+	return kinesis.NewFromConfig(*cfg)
 }
 
-func NewElasticCacheClient(cfg *aws.Config) elasticache.Client {
-	return *elasticache.NewFromConfig(*cfg)
+func NewElasticCacheClient(cfg *aws.Config) *elasticache.Client {
+	return elasticache.NewFromConfig(*cfg)
 }
 
-func NewAutoScalingClient(cfg *aws.Config) autoscaling.Client {
-	return *autoscaling.NewFromConfig(*cfg)
+func NewAutoScalingClient(cfg *aws.Config) *autoscaling.Client {
+	return autoscaling.NewFromConfig(*cfg)
 }
 
-func NewApplicationAutoScalingClient(cfg *aws.Config) applicationautoscaling.Client {
-	return *applicationautoscaling.NewFromConfig(*cfg)
+func NewApplicationAutoScalingClient(cfg *aws.Config) *applicationautoscaling.Client {
+	return applicationautoscaling.NewFromConfig(*cfg)
 }

@@ -8,7 +8,7 @@ import (
 
 type EC2Service struct {
 	Region string
-	Client autoscaling.Client
+	Client *autoscaling.Client
 }
 
 func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig) *ScalingFailureError {

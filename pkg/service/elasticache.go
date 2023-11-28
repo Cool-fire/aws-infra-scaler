@@ -17,7 +17,7 @@ const (
 
 type ElasticCacheService struct {
 	Region string
-	Client elasticache.Client
+	Client *elasticache.Client
 }
 
 func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticCacheServiceScalingConfig, isScalingUp bool) *ScalingFailureError {
@@ -36,7 +36,7 @@ func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticC
 	return nil
 }
 
-func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *ScalingFailureError {
+func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client *elasticache.Client) *ScalingFailureError {
 
 	nodeCount := int32(clientConfig.NodeCount)
 	applyImmediately := true
@@ -58,7 +58,7 @@ func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScal
 	}
 }
 
-func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client elasticache.Client) *ScalingFailureError {
+func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheServiceScalingConfig, up bool, client *elasticache.Client) *ScalingFailureError {
 	nodeCount := int32(clientConfig.NodeCount)
 	applyImmediately := true
 	input := elasticache.ModifyCacheClusterInput{

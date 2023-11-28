@@ -9,7 +9,7 @@ import (
 
 type KinesisService struct {
 	Region string
-	Client kinesis.Client
+	Client *kinesis.Client
 }
 
 func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig) *ScalingFailureError {

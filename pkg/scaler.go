@@ -60,7 +60,11 @@ func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, should
 	defer wg.Done()
 
 	var serviceWg sync.WaitGroup
-	awsCreds, _ := service.NewConfig(scalingRegion.Region, assumeRoleArn)
+	awsCreds, err := service.NewConfig(scalingRegion.Region, assumeRoleArn)
+	if err != nil {
+		resultChan <- err
+		return
+	}
 
 	for _, serviceScaleConfig := range scalingRegion.ServiceScaleConfigs {
 		serviceWg.Add(1)

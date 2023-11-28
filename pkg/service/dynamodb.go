@@ -16,7 +16,7 @@ var applicationAutoscalingClient *applicationautoscaling.Client
 
 type DynamoDBService struct {
 	Region string
-	Client applicationautoscaling.Client
+	Client *applicationautoscaling.Client
 }
 
 func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig) []*ScalingFailureError {
@@ -24,7 +24,7 @@ func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig
 	if err != nil {
 		return []*ScalingFailureError{err}
 	}
-	applicationAutoscalingClient = &ds.Client
+	applicationAutoscalingClient = ds.Client
 
 	errChan := make(chan *ScalingFailureError)
 
