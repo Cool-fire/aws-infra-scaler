@@ -7,7 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 )
 
-func ScaleEc2Service(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig, client autoscaling.Client) *errors.ScalingFailureError {
+type EC2Service struct {
+	Region string
+	Client autoscaling.Client
+}
+
+func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig) *errors.ScalingFailureError {
 	err := validateEc2ScalingConfig(ec2ClientConfig)
 	if err != nil {
 		return err
@@ -24,7 +29,7 @@ func ScaleEc2Service(ctx context.Context, ec2ClientConfig config.EC2ServiceScali
 		MinSize:              &minSize,
 	}
 
-	_, scaleError := client.UpdateAutoScalingGroup(ctx, &input)
+	_, scaleError := ec2.Client.UpdateAutoScalingGroup(ctx, &input)
 
 	if scaleError != nil {
 		return &errors.ScalingFailureError{

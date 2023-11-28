@@ -65,21 +65,26 @@ func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, should
 
 	for _, serviceScaleConfig := range scalingRegion.ServiceScaleConfigs {
 		serviceWg.Add(1)
-		go scaleService(ctx, awsCreds, serviceScaleConfig, shouldScaleUp, &serviceWg, resultChan)
+		go scaleService(ctx, awsCreds, serviceScaleConfig, shouldScaleUp, scalingRegion.Region, &serviceWg, resultChan)
 	}
 
 	serviceWg.Wait()
 	fmt.Println("done scaling region ", scalingRegion.Region)
 }
 
-func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan error) {
+func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, region string, wg *sync.WaitGroup, resultChan chan error) {
 	defer wg.Done()
 
 	switch serviceScaleConfig.(type) {
 	case config.KinesisServiceScalingConfig:
 		kinesisClient := service.NewKinesisClient(awsCreds)
 		kinesisClientConfig := serviceScaleConfig.(config.KinesisServiceScalingConfig)
-		err := service.ScaleKinesisService(ctx, kinesisClientConfig, kinesisClient)
+
+		ks := service.KinesisService{
+			Region: region,
+			Client: kinesisClient,
+		}
+		err := ks.ScaleService(ctx, kinesisClientConfig)
 		if err != nil {
 			fmt.Println("Error scaling Kinesis service: ", err)
 			resultChan <- err
@@ -88,7 +93,13 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 	case config.EC2ServiceScalingConfig:
 		autoScalingClient := service.NewAutoScalingClient(awsCreds)
 		ec2ClientConfig := serviceScaleConfig.(config.EC2ServiceScalingConfig)
-		err := service.ScaleEc2Service(ctx, ec2ClientConfig, autoScalingClient)
+
+		ec2 := service.EC2Service{
+			Region: region,
+			Client: autoScalingClient,
+		}
+
+		err := ec2.ScaleService(ctx, ec2ClientConfig)
 		if err != nil {
 			fmt.Println("Error scaling EC2 service: ", err)
 			resultChan <- err
@@ -96,11 +107,37 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 	case config.ElasticCacheServiceScalingConfig:
 		fmt.Println("Scaling ElasticCache")
-		resultChan <- nil
+		elasticCacheClient := service.NewElasticCacheClient(awsCreds)
+		elasticCacheClientConfig := serviceScaleConfig.(config.ElasticCacheServiceScalingConfig)
+
+		es := service.ElasticCacheService{
+			Region: region,
+			Client: elasticCacheClient,
+		}
+
+		err := es.ScaleService(ctx, elasticCacheClientConfig, shouldScaleUp)
+		if err != nil {
+			fmt.Println("Error scaling ElasticCache service: ", err)
+			resultChan <- err
+		}
 
 	case config.DynamoDBServiceScalingConfig:
 		fmt.Println("Scaling DynamoDB")
-		resultChan <- nil
+		appAutoScalingClient := service.NewApplicationAutoScalingClient(awsCreds)
+		dynamoDBClientConfig := serviceScaleConfig.(config.DynamoDBServiceScalingConfig)
+
+		ds := service.DynamoDBService{
+			Region: region,
+			Client: appAutoScalingClient,
+		}
+
+		errs := ds.ScaleService(ctx, dynamoDBClientConfig)
+		if errs != nil {
+			fmt.Println("Error scaling DynamoDB service: ", errs)
+			for _, err := range errs {
+				resultChan <- err
+			}
+		}
 
 	default:
 		fmt.Println("Unknown service")

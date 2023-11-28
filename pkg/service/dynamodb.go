@@ -15,16 +15,21 @@ const (
 
 var applicationAutoscalingClient *applicationautoscaling.Client
 
-func ScaleDynamoDBService(ctx *context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig, client applicationautoscaling.Client) []*errors.ScalingFailureError {
+type DynamoDBService struct {
+	Region string
+	Client applicationautoscaling.Client
+}
+
+func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig) []*errors.ScalingFailureError {
 	err := validateDynamoDBScalingConfig(dynamodbClientConfig)
 	if err != nil {
 		return []*errors.ScalingFailureError{err}
 	}
-	applicationAutoscalingClient = &client
+	applicationAutoscalingClient = &ds.Client
 
 	errChan := make(chan *errors.ScalingFailureError)
 
-	go scaleDynamoDB(ctx, dynamodbClientConfig, errChan)
+	go scaleDynamoDB(&ctx, dynamodbClientConfig, errChan)
 
 	var scalingErrors []*errors.ScalingFailureError
 	for err := range errChan {

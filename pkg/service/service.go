@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
@@ -87,4 +88,8 @@ func NewElasticCacheClient(cfg *aws.Config) elasticache.Client {
 
 func NewAutoScalingClient(cfg *aws.Config) autoscaling.Client {
 	return *autoscaling.NewFromConfig(*cfg)
+}
+
+func NewApplicationAutoScalingClient(cfg *aws.Config) applicationautoscaling.Client {
+	return *applicationautoscaling.NewFromConfig(*cfg)
 }

@@ -8,24 +8,29 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 )
 
-func ScaleKinesisService(ctx context.Context, kinesisClientConfig config.KinesisServiceScalingConfig, client kinesis.Client) *errors.ScalingFailureError {
-	err := validateKinesisScalingConfig(kinesisClientConfig)
+type KinesisService struct {
+	Region string
+	Client kinesis.Client
+}
+
+func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig) *errors.ScalingFailureError {
+	err := validateKinesisScalingConfig(kinesisServiceScalingConfig)
 	if err != nil {
 		return err
 	}
 
-	targetShareCount := int32(kinesisClientConfig.DesiredShardCount)
+	targetShareCount := int32(kinesisServiceScalingConfig.DesiredShardCount)
 	input := kinesis.UpdateShardCountInput{
-		StreamName:       &kinesisClientConfig.StreamArn,
+		StreamName:       &kinesisServiceScalingConfig.StreamArn,
 		TargetShardCount: &targetShareCount,
 		ScalingType:      types.ScalingTypeUniformScaling,
 	}
 
-	_, scaleError := client.UpdateShardCount(ctx, &input)
+	_, scaleError := k.Client.UpdateShardCount(ctx, &input)
 	if scaleError != nil {
 		return &errors.ScalingFailureError{
 			ServiceName:  Kinesis,
-			IdentifierId: kinesisClientConfig.StreamArn,
+			IdentifierId: kinesisServiceScalingConfig.StreamArn,
 			Reason:       scaleError.Error(),
 		}
 	}
