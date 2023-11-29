@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
@@ -19,18 +20,18 @@ type DynamoDBService struct {
 	Client *applicationautoscaling.Client
 }
 
-func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig) []*ScalingFailureError {
+func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig) []*ScalingError {
 	err := validateDynamoDBScalingConfig(dynamodbClientConfig)
 	if err != nil {
-		return []*ScalingFailureError{err}
+		return []*ScalingError{err}
 	}
 	applicationAutoscalingClient = ds.Client
 
-	errChan := make(chan *ScalingFailureError)
+	errChan := make(chan *ScalingError)
 
 	go scaleDynamoDB(&ctx, dynamodbClientConfig, errChan)
 
-	var scalingErrors []*ScalingFailureError
+	var scalingErrors []*ScalingError
 	for err := range errChan {
 		if err != nil {
 			scalingErrors = append(scalingErrors, err)
@@ -44,7 +45,7 @@ func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig
 	}
 }
 
-func scaleDynamoDB(ctx *context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig, errChan chan<- *ScalingFailureError) {
+func scaleDynamoDB(ctx *context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig, errChan chan<- *ScalingError) {
 	defer close(errChan)
 
 	var wg sync.WaitGroup
@@ -63,7 +64,7 @@ func scaleDynamoDB(ctx *context.Context, dynamodbClientConfig config.DynamoDBSer
 	wg.Wait()
 }
 
-func scaleRCU(ctx context.Context, rcu config.RCU, isIndex bool, tableName string, wg *sync.WaitGroup) *ScalingFailureError {
+func scaleRCU(ctx context.Context, rcu config.RCU, isIndex bool, tableName string, wg *sync.WaitGroup) *ScalingError {
 	defer wg.Done()
 
 	scalableDimension := types.ScalableDimensionDynamoDBTableReadCapacityUnits
@@ -78,7 +79,7 @@ func scaleRCU(ctx context.Context, rcu config.RCU, isIndex bool, tableName strin
 	return nil
 }
 
-func scaleWCU(ctx context.Context, wcu config.WCU, isIndex bool, tableName string, wg *sync.WaitGroup) *ScalingFailureError {
+func scaleWCU(ctx context.Context, wcu config.WCU, isIndex bool, tableName string, wg *sync.WaitGroup) *ScalingError {
 	defer wg.Done()
 
 	scalableDimension := types.ScalableDimensionDynamoDBTableWriteCapacityUnits
@@ -93,7 +94,7 @@ func scaleWCU(ctx context.Context, wcu config.WCU, isIndex bool, tableName strin
 	return nil
 }
 
-func scaleDB(ctx context.Context, scalableDimension types.ScalableDimension, tableName string, minCapacity int32, maxCapacity int32) *ScalingFailureError {
+func scaleDB(ctx context.Context, scalableDimension types.ScalableDimension, tableName string, minCapacity int32, maxCapacity int32) *ScalingError {
 	request := applicationautoscaling.RegisterScalableTargetInput{
 		MinCapacity:       &minCapacity,
 		MaxCapacity:       &maxCapacity,
@@ -103,20 +104,20 @@ func scaleDB(ctx context.Context, scalableDimension types.ScalableDimension, tab
 	}
 	_, err := applicationAutoscalingClient.RegisterScalableTarget(ctx, &request)
 	if err != nil {
-		return &ScalingFailureError{
-			ServiceName:  DynamoDB,
+		return &ScalingError{
+			ServiceName:  string(DynamoDB),
 			IdentifierId: tableName,
-			Reason:       err.Error(),
+			Err:          err,
 		}
 	}
 	return nil
 }
-func validateDynamoDBScalingConfig(clientConfig config.DynamoDBServiceScalingConfig) *ScalingFailureError {
+func validateDynamoDBScalingConfig(clientConfig config.DynamoDBServiceScalingConfig) *ScalingError {
 	if clientConfig.TableName == "" || validateRCUConfig(clientConfig.RCU) || validateWCUConfig(clientConfig.WCU) {
-		return &ScalingFailureError{
-			ServiceName:  DynamoDB,
+		return &ScalingError{
+			ServiceName:  string(DynamoDB),
 			IdentifierId: clientConfig.TableName,
-			Reason:       "Invalid scaling config",
+			Err:          fmt.Errorf("invalid scaling config"),
 		}
 	}
 	return nil

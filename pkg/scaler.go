@@ -2,10 +2,12 @@ package pkg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/service"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/smithy-go"
 	"sync"
 )
 
@@ -17,7 +19,7 @@ type ScalingResult struct {
 
 var assumeRoleArn string
 
-func ScaleApplication(shouldScaleUp bool, configPath string) error {
+func ScaleApp(shouldScaleUp bool, configPath string) error {
 	scalingConfig, err := config.ReadConfig(configPath)
 	assumeRoleArn = scalingConfig.AssumedRoleArn
 
@@ -28,7 +30,7 @@ func ScaleApplication(shouldScaleUp bool, configPath string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	resultChan := make(chan error)
+	resultChan := make(chan *service.ScalingError)
 
 	go func() {
 		defer close(resultChan)
@@ -48,21 +50,33 @@ func ScaleApplication(shouldScaleUp bool, configPath string) error {
 			return nil
 		case result, ok := <-resultChan:
 			if !ok {
-				fmt.Println("Result channel closed")
 				return nil
 			}
-			fmt.Println("Result received:", result)
+
+			var se *service.ScalingError
+			if errors.As(result, &se) {
+				fmt.Printf("Scaling error: %+v\n", se.Err)
+			} else {
+				panic(fmt.Sprintf("unknown error: %+v", result))
+			}
 		}
 	}
 }
 
-func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan error) {
+func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
 	defer wg.Done()
 
 	var serviceWg sync.WaitGroup
-	awsCreds, err := service.NewConfig(scalingRegion.Region, assumeRoleArn)
+	awsCreds, err := service.NewConfig(ctx, scalingRegion.Region, assumeRoleArn)
 	if err != nil {
-		resultChan <- err
+		var oe *smithy.OperationError
+		if errors.As(err, &oe) {
+			resultChan <- &service.ScalingError{
+				ServiceName:  oe.Service(),
+				IdentifierId: oe.ServiceID,
+				Err:          oe,
+			}
+		}
 		return
 	}
 
@@ -72,10 +86,9 @@ func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, should
 	}
 
 	serviceWg.Wait()
-	fmt.Println("done scaling region ", scalingRegion.Region)
 }
 
-func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, region string, wg *sync.WaitGroup, resultChan chan error) {
+func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, region string, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
 	defer wg.Done()
 
 	switch serviceScaleConfig.(type) {
@@ -89,7 +102,6 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 		}
 		err := ks.ScaleService(ctx, kinesisClientConfig)
 		if err != nil {
-			fmt.Println("Error scaling Kinesis service: ", err)
 			resultChan <- err
 		}
 
@@ -104,12 +116,10 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 		err := ec2.ScaleService(ctx, ec2ClientConfig)
 		if err != nil {
-			fmt.Println("Error scaling EC2 service: ", err)
 			resultChan <- err
 		}
 
 	case config.ElasticCacheServiceScalingConfig:
-		fmt.Println("Scaling ElasticCache")
 		elasticCacheClient := service.NewElasticCacheClient(awsCreds)
 		elasticCacheClientConfig := serviceScaleConfig.(config.ElasticCacheServiceScalingConfig)
 
@@ -120,12 +130,10 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 		err := es.ScaleService(ctx, elasticCacheClientConfig, shouldScaleUp)
 		if err != nil {
-			fmt.Println("Error scaling ElasticCache service: ", err)
 			resultChan <- err
 		}
 
 	case config.DynamoDBServiceScalingConfig:
-		fmt.Println("Scaling DynamoDB")
 		appAutoScalingClient := service.NewApplicationAutoScalingClient(awsCreds)
 		dynamoDBClientConfig := serviceScaleConfig.(config.DynamoDBServiceScalingConfig)
 
@@ -136,18 +144,16 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 		errs := ds.ScaleService(ctx, dynamoDBClientConfig)
 		if errs != nil {
-			fmt.Println("Error scaling DynamoDB service: ", errs)
 			for _, err := range errs {
 				resultChan <- err
 			}
 		}
 
 	default:
-		fmt.Println("Unknown service")
-		resultChan <- &service.ScalingFailureError{
+		resultChan <- &service.ScalingError{
 			ServiceName:  "Unknown",
 			IdentifierId: "Unknown",
-			Reason:       "Unknown service",
+			Err:          fmt.Errorf("unknown service"),
 		}
 	}
 }

@@ -37,8 +37,7 @@ func getServiceFromString(s string) Service {
 	}
 }
 
-func NewConfig(region string, assumeRoleArn string) (*aws.Config, error) {
-	ctx := context.Background()
+func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.Config, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 
 	if err != nil {

@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 	Short: "AWS Auto Scaler CLI",
 	Long:  "AWS Auto Scaler CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := pkg.ScaleApplication(options.scaleUpFlag, options.configPath)
+		err := pkg.ScaleApp(options.scaleUpFlag, options.configPath)
 		if err != nil {
 			panic(err)
 		}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
@@ -12,7 +13,7 @@ type KinesisService struct {
 	Client *kinesis.Client
 }
 
-func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig) *ScalingFailureError {
+func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig) *ScalingError {
 	err := validateKinesisScalingConfig(kinesisServiceScalingConfig)
 	if err != nil {
 		return err
@@ -27,21 +28,21 @@ func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingC
 
 	_, scaleError := k.Client.UpdateShardCount(ctx, &input)
 	if scaleError != nil {
-		return &ScalingFailureError{
-			ServiceName:  Kinesis,
+		return &ScalingError{
+			ServiceName:  string(Kinesis),
 			IdentifierId: kinesisServiceScalingConfig.StreamArn,
-			Reason:       scaleError.Error(),
+			Err:          scaleError,
 		}
 	}
 	return nil
 }
 
-func validateKinesisScalingConfig(clientConfig config.KinesisServiceScalingConfig) *ScalingFailureError {
+func validateKinesisScalingConfig(clientConfig config.KinesisServiceScalingConfig) *ScalingError {
 	if clientConfig.StreamArn == "" || clientConfig.DesiredShardCount <= 0 {
-		return &ScalingFailureError{
-			ServiceName:  Kinesis,
+		return &ScalingError{
+			ServiceName:  string(Kinesis),
 			IdentifierId: clientConfig.StreamArn,
-			Reason:       "Invalid scaling config",
+			Err:          fmt.Errorf("invalid scaling config"),
 		}
 	}
 	return nil

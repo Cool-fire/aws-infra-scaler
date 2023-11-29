@@ -4,12 +4,12 @@ import (
 	"fmt"
 )
 
-type ScalingFailureError struct {
-	ServiceName  Service
+type ScalingError struct {
+	ServiceName  string
 	IdentifierId string
-	Reason       string
+	Err          error
 }
 
-func (s *ScalingFailureError) Error() string {
-	return fmt.Sprintf("Scaling failed for service %s with identifier %s. Reason: %s", s.ServiceName, s.IdentifierId, s.Reason)
+func (s *ScalingError) Error() string {
+	return fmt.Sprintf("Scaling failed for service %s with identifier %s. Reason: %s", s.ServiceName, s.IdentifierId, s.Err.Error())
 }
