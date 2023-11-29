@@ -55,7 +55,7 @@ func ScaleApp(shouldScaleUp bool, configPath string) error {
 
 			var se *service.ScalingError
 			if errors.As(result, &se) {
-				fmt.Printf("Scaling error: %+v\n", se.Err)
+				fmt.Printf("Scaling error: %+v\n", se)
 			} else {
 				panic(fmt.Sprintf("unknown error: %+v", result))
 			}
