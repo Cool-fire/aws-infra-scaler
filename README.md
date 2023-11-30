@@ -9,6 +9,19 @@ This is a CLI tool to scale up/down AWS infrastructure based on a YAML configura
 2. Set the AWS credentials in the environment variables. The tool will use these credentials to connect to AWS. Ensure that you have valid Region configured in the credentials.
 3. Run the binary with ```--scale-up``` or ```--scale-down``` flag to scale up or down the infrastructure respectively. The tool will read the configuration from the ```config.yaml``` file in the current directory. You can also specify the path to the configuration file using the ```--config``` flag.
 
+## Usage
+
+### Scale Up
+
+```
+./scaler --scale-up --config ./config.yaml
+```
+
+### Scale Down
+```
+./scaler --scale-down --config ./config.yaml
+```
+
 ## Configuration
 
 The CLI uses a YAML configuration file to read the configuration. Each configuration can have multiple scaling regions and each scaling region can have multiple services to scale. 
