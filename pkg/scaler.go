@@ -22,7 +22,7 @@ func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
 
 	scalingConfig, err := config.ReadConfig(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading config: %w", err)
+		return nil, err
 	}
 
 	assumeRoleArn = scalingConfig.AssumedRoleArn
@@ -38,6 +38,7 @@ func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
 	go func() {
 		defer close(resultChan)
 		var wg sync.WaitGroup
+		fmt.Println("Scaling services...")
 		for _, scalingRegion := range scalingConfig.ScalingRegions {
 			wg.Add(1)
 			go scaleRegion(ctx, scalingRegion, shouldScaleUp, &wg, resultChan)

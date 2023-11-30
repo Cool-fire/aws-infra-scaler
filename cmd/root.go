@@ -15,22 +15,27 @@ type Options struct {
 
 var options *Options
 
+const (
+	defaultConfigPath = "config.yaml"
+)
+
 func init() {
 	options = &Options{}
 
 	rootCmd.PersistentFlags().BoolVarP(&options.scaleUpFlag, "scale-up", "u", false, "Scale up")
 	rootCmd.PersistentFlags().BoolVarP(&options.scaleDownFlag, "scale-down", "d", false, "Scale down")
-	rootCmd.PersistentFlags().StringVarP(&options.configPath, "config-path", "c", "", "Config file path")
+	rootCmd.PersistentFlags().StringVarP(&options.configPath, "config", "c", "config.yaml", "Config file path")
 
-	// make config flag required
-	_ = rootCmd.MarkPersistentFlagRequired("config")
+	if options.configPath == "" {
+		options.configPath = defaultConfigPath
+	}
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "aws-infra-scaler",
 	Short: "AWS Auto Scaler CLI is a simple CLI tool to scale AWS infrastructure services via YAML config files",
-	Long: `AWS Auto Scaler CLI is a CLI tool to scale AWS infrastructure services via YAML config files, 
-			It is designed to scale AWS infrastructure services such as DynamoDB, Kinesis, Elasticache, EC2 etc.`,
+	Long: `AWS Auto Scaler CLI is a CLI tool to scale AWS infrastructure services via YAML config files,
+It is designed to scale AWS infrastructure services such as DynamoDB, Kinesis, Elasticache, EC2 etc.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		scalingResponse, err := pkg.ScaleApp(options.scaleUpFlag, options.configPath)
 		if err != nil {

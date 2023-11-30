@@ -49,7 +49,7 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 	}
 
 	switch s {
-	case "Kinesis":
+	case "kinesis":
 		var kinesisServiceScalingConfig KinesisServiceScalingConfig
 		decoderConfig.Result = &kinesisServiceScalingConfig
 
@@ -59,7 +59,7 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 		}
 		return kinesisServiceScalingConfig, nil
 
-	case "Ec2":
+	case "ec2":
 		var ec2ServiceScalingConfig EC2ServiceScalingConfig
 		decoderConfig.Result = &ec2ServiceScalingConfig
 
@@ -69,7 +69,7 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 		}
 		return ec2ServiceScalingConfig, nil
 
-	case "ElasticCache":
+	case "elasticache":
 		var elasticCacheServiceScalingConfig ElasticCacheServiceScalingConfig
 		decoderConfig.Result = &elasticCacheServiceScalingConfig
 
@@ -79,7 +79,7 @@ func convertMapToConfig(data map[string]interface{}) (interface{}, error) {
 		}
 		return elasticCacheServiceScalingConfig, nil
 
-	case "DynamoDB":
+	case "dynamodb":
 		var dynamoDBServiceScalingConfig DynamoDBServiceScalingConfig
 		decoderConfig.Result = &dynamoDBServiceScalingConfig
 

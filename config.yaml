@@ -3,10 +3,10 @@ assumedRoleArn: "arn:aws:iam::279039983534:role/admin-role"
 scalingRegions:
   - region: "us-east-1"
     serviceScaleConfigs:
-      - service: "Kinesis"
+      - service: "kinesis"
         streamArn: "arn:aws:kinesis:us-east-1:123456789012:stream/ScaleUpStream"
         desiredShardCount: 1
-      - service: "DynamoDB"
+      - service: "dynamodb"
         tableName: "ScaleUpTable"
         isIndex: false
         rcu:
@@ -15,13 +15,24 @@ scalingRegions:
         wcu:
           minProvisionedCapacity: 1
           maxProvisionedCapacity: 100
+      - service: "ec2"
+        asgName: "ScaleUpASG"
+        minCount: 1
+        maxCount: 10
+        desiredCount: 1
+      - service: "elasticache"
+        clusterId: "ScaleUpCluster"
+        engine: "redis"
+        nodeCount: 2
+        nodesToDelete: [ ]
+
 
   - region: "us-west-2"
     serviceScaleConfigs:
-      - service: "Kinesis"
+      - service: "kinesis"
         streamArn: "arn:aws:kinesis:us-west-2:123456789012:stream/ScaleUpStream"
         desiredShardCount: 1
-      - service: "DynamoDB"
+      - service: "dynamodb"
         tableName: "ScaleUpTable"
         isIndex: false
         rcu:
@@ -30,3 +41,10 @@ scalingRegions:
         wcu:
           minProvisionedCapacity: 1
           maxProvisionedCapacity: 100
+      - service: "elasticache"
+        clusterId: "ScaleUpCluster"
+        engine: "redis"
+        nodeCount: 2
+        nodesToDelete:
+          - "0001"
+          - "0002"
