@@ -5,6 +5,7 @@ import (
 )
 
 type ScalingError struct {
+	Region       string
 	ServiceName  string
 	IdentifierId string
 	Err          error

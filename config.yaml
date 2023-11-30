@@ -1,4 +1,4 @@
-name: "Scale down config"
+appName: "Scale down config"
 assumedRoleArn: "arn:aws:iam::279039983534:role/admin-role"
 scalingRegions:
   - region: "us-east-1"

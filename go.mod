@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.32.3
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.25.4
+	github.com/aws/smithy-go v1.17.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.8.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -26,7 +27,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.20.1 // indirect
-	github.com/aws/smithy-go v1.17.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

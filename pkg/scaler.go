@@ -11,20 +11,23 @@ import (
 	"sync"
 )
 
-type ScalingResult struct {
-	region  string
-	service string
-	err     error
+type ScalingResponse struct {
+	ContainsFailedServices bool
+	RegionalFailedServices map[string][]*service.ScalingError
 }
 
 var assumeRoleArn string
 
-func ScaleApp(shouldScaleUp bool, configPath string) error {
-	scalingConfig, err := config.ReadConfig(configPath)
-	assumeRoleArn = scalingConfig.AssumedRoleArn
+func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
 
+	scalingConfig, err := config.ReadConfig(configPath)
 	if err != nil {
-		return fmt.Errorf("error reading config: %w", err)
+		return nil, fmt.Errorf("error reading config: %w", err)
+	}
+
+	assumeRoleArn = scalingConfig.AssumedRoleArn
+	if assumeRoleArn == "" {
+		return nil, errors.New("no assumed role ARN provided")
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -42,22 +45,32 @@ func ScaleApp(shouldScaleUp bool, configPath string) error {
 		wg.Wait()
 	}()
 
-	fmt.Println("Waiting for results...")
+	regionalFailedServices := make(map[string][]*service.ScalingError)
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Context cancelled")
-			return nil
-		case result, ok := <-resultChan:
-			if !ok {
-				return nil
+			return nil, fmt.Errorf("context cancelled")
+		case result, open := <-resultChan:
+
+			if !open {
+				if len(regionalFailedServices) > 0 {
+					return &ScalingResponse{
+						ContainsFailedServices: true,
+						RegionalFailedServices: regionalFailedServices,
+					}, nil
+				} else {
+					return &ScalingResponse{
+						ContainsFailedServices: false,
+						RegionalFailedServices: nil,
+					}, nil
+				}
 			}
 
-			var se *service.ScalingError
-			if errors.As(result, &se) {
-				fmt.Printf("Scaling error: %+v\n", se)
-			} else {
-				panic(fmt.Sprintf("unknown error: %+v", result))
+			if result != nil {
+				if regionalFailedServices[result.Region] == nil {
+					regionalFailedServices[result.Region] = make([]*service.ScalingError, 0)
+				}
+				regionalFailedServices[result.Region] = append(regionalFailedServices[result.Region], result)
 			}
 		}
 	}
@@ -102,6 +115,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 		}
 		err := ks.ScaleService(ctx, kinesisClientConfig)
 		if err != nil {
+			err.Region = region
 			resultChan <- err
 		}
 
@@ -116,6 +130,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 		err := ec2.ScaleService(ctx, ec2ClientConfig)
 		if err != nil {
+			err.Region = region
 			resultChan <- err
 		}
 
@@ -130,6 +145,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 
 		err := es.ScaleService(ctx, elasticCacheClientConfig, shouldScaleUp)
 		if err != nil {
+			err.Region = region
 			resultChan <- err
 		}
 
@@ -145,6 +161,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 		errs := ds.ScaleService(ctx, dynamoDBClientConfig)
 		if errs != nil {
 			for _, err := range errs {
+				err.Region = region
 				resultChan <- err
 			}
 		}
