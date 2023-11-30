@@ -1,5 +1,5 @@
 appName: "Scale down config"
-assumedRoleArn: "arn:aws:iam::279039983534:role/admin-role"
+assumedRoleArn: "arn:aws:iam::123456789:role/admin-role"
 scalingRegions:
   - region: "us-east-1"
     serviceScaleConfigs:
