@@ -11,10 +11,10 @@ scalingRegions:
         isIndex: false
         rcu:
           minProvisionedCapacity: 1
-          maxProvisionedCapacity: 100
+          maxProvisionedCapacity: 1000
         wcu:
           minProvisionedCapacity: 1
-          maxProvisionedCapacity: 100
+          maxProvisionedCapacity: 1000
       - service: "ec2"
         asgName: "ScaleUpASG"
         minCount: 1
@@ -37,10 +37,10 @@ scalingRegions:
         isIndex: false
         rcu:
           minProvisionedCapacity: 1
-          maxProvisionedCapacity: 100
+          maxProvisionedCapacity: 1000
         wcu:
           minProvisionedCapacity: 1
-          maxProvisionedCapacity: 100
+          maxProvisionedCapacity: 1000
       - service: "elasticache"
         clusterId: "ScaleUpCluster"
         engine: "redis"
