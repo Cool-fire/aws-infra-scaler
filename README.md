@@ -1,5 +1,7 @@
 # AWS Infra Scaler
 
+E2E test run 2026-04-19T20:13:43.816Z
+
 This is a CLI tool to scale up/down AWS infrastructure based on a YAML configuration file. This easy to use tool can be helpful while testing the AWS infrastructure scaling.
 
 
