@@ -2,6 +2,8 @@
 
 This is a CLI tool to scale up/down AWS infrastructure based on a YAML configuration file. This easy to use tool can be helpful while testing the AWS infrastructure scaling.
 
+E2E test run 2026-04-20T10:29:21.952Z
+
 
 ## Setup
 
