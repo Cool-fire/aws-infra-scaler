@@ -107,3 +107,5 @@ maxCount: 1
 Each Region and corresponding services are scaled independently. Error in scaling one service or region will not affect the scaling of other services or regions.
 
 The errors are accumulated per region for failed services and the CLI will print the error message along with identifierId and failed service name for each region at the end of the scaling process.
+
+E2E test run 2026-04-20T08:54:56.233Z
