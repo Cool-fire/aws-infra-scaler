@@ -107,3 +107,7 @@ maxCount: 1
 Each Region and corresponding services are scaled independently. Error in scaling one service or region will not affect the scaling of other services or regions.
 
 The errors are accumulated per region for failed services and the CLI will print the error message along with identifierId and failed service name for each region at the end of the scaling process.
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
