@@ -4,13 +4,17 @@ This is a CLI tool to scale up/down AWS infrastructure based on a YAML configura
 
 ## Supported AWS Services
 
-The following AWS services can be scaled using this tool:
+The tool supports scaling the following AWS services across multiple regions concurrently:
 
-- **DynamoDB** - Scale table and index read/write capacity units
-- **Kinesis** - Scale stream shard count
-- **Elasticache** - Scale Redis and Memcached cluster node count
-- **EC2** - Scale Auto Scaling Group (ASG) desired capacity
+- **DynamoDB** - Scales read capacity units (RCU) and write capacity units (WCU) for both tables and global secondary indexes. Supports setting min/max provisioned capacity values.
 
+- **Kinesis** - Scales data stream shard count to adjust throughput. Note: Kinesis can only scale to double the current shard count per operation (e.g., 1→2, 2→4).
+
+- **Elasticache** - Scales Redis and Memcached cluster node count. For scale-down operations, you can specify which nodes to remove by their node IDs.
+
+- **EC2 Auto Scaling Groups** - Adjusts the minimum, desired, and maximum instance counts for Auto Scaling Groups to control EC2 capacity.
+
+All services are scaled independently per region, and failures in one service/region do not affect others. Error details are reported at the end of the scaling process.
 
 ## Setup
 
