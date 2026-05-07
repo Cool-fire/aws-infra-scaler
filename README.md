@@ -2,6 +2,15 @@
 
 This is a CLI tool to scale up/down AWS infrastructure based on a YAML configuration file. This easy to use tool can be helpful while testing the AWS infrastructure scaling.
 
+## Supported AWS Services
+
+The following AWS services can be scaled using this tool:
+
+- **DynamoDB** - Scale table and index read/write capacity units
+- **Kinesis** - Scale stream shard count
+- **Elasticache** - Scale Redis and Memcached cluster node count
+- **EC2** - Scale Auto Scaling Group (ASG) desired capacity
+
 
 ## Setup
 
