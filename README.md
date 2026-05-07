@@ -1,6 +1,13 @@
 # AWS Infra Scaler
 
-This is a CLI tool to scale up/down AWS infrastructure based on a YAML configuration file. This easy to use tool can be helpful while testing the AWS infrastructure scaling.
+A lightweight command-line tool designed to simplify the scaling of AWS infrastructure resources. This tool enables you to quickly scale up or down multiple AWS services across different regions using a single YAML configuration file, making it ideal for testing, cost optimization, and managing non-production environments.
+
+*Key Features:*
+- Scale multiple AWS services simultaneously (DynamoDB, EC2 Auto Scaling Groups, ElastiCache, and Kinesis)
+- Multi-region support with independent scaling per region
+- Simple YAML-based configuration
+- Graceful error handling with detailed reporting per service
+- IAM role assumption for secure cross-account operations
 
 
 ## Setup
