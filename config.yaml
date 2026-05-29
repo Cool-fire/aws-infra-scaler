@@ -1,3 +1,4 @@
+# managed by Gambits
 appName: "Scale down config"
 assumedRoleArn: "arn:aws:iam::123456789:role/admin-role"
 scalingRegions:
