@@ -102,7 +102,10 @@ func scaleDB(ctx context.Context, scalableDimension types.ScalableDimension, tab
 		ServiceNamespace:  DynamodbServiceNamespace,
 		ScalableDimension: scalableDimension,
 	}
-	_, err := applicationAutoscalingClient.RegisterScalableTarget(ctx, &request)
+	requestCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	_, err := applicationAutoscalingClient.RegisterScalableTarget(requestCtx, &request)
 	if err != nil {
 		return &ScalingError{
 			ServiceName:  string(DynamoDB),
@@ -112,6 +115,7 @@ func scaleDB(ctx context.Context, scalableDimension types.ScalableDimension, tab
 	}
 	return nil
 }
+
 func validateDynamoDBScalingConfig(clientConfig config.DynamoDBServiceScalingConfig) *ScalingError {
 	if clientConfig.TableName == "" || validateRCUConfig(clientConfig.RCU) || validateWCUConfig(clientConfig.WCU) {
 		return &ScalingError{

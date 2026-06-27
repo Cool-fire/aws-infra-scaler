@@ -51,7 +51,10 @@ func scaleRedis(ctx context.Context, clientConfig config.ElasticCacheServiceScal
 		input.NodeGroupsToRemove = clientConfig.NodesToDelete
 	}
 
-	_, err := client.ModifyReplicationGroupShardConfiguration(ctx, &input)
+	requestCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	_, err := client.ModifyReplicationGroupShardConfiguration(requestCtx, &input)
 	return &ScalingError{
 		ServiceName:  string(ElasticCache),
 		IdentifierId: clientConfig.ClusterId,
@@ -72,7 +75,10 @@ func scaleMemcached(ctx context.Context, clientConfig config.ElasticCacheService
 		input.CacheNodeIdsToRemove = clientConfig.NodesToDelete
 	}
 
-	_, err := client.ModifyCacheCluster(ctx, &input)
+	requestCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	_, err := client.ModifyCacheCluster(requestCtx, &input)
 	return &ScalingError{
 		ServiceName:  string(ElasticCache),
 		IdentifierId: clientConfig.ClusterId,

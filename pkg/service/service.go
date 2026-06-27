@@ -9,7 +9,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"time"
 )
+
+const defaultOperationTimeout = 30 * time.Second
+
+func withDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(ctx, defaultOperationTimeout)
+}
 
 type Service string
 
@@ -38,7 +45,10 @@ func getServiceFromString(s string) Service {
 }
 
 func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	configCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	cfg, err := config.LoadDefaultConfig(configCtx)
 
 	if err != nil {
 		return nil, err
@@ -57,12 +67,15 @@ func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.C
 
 func assumeRoleCreds(ctx context.Context, cfg aws.Config, assumeRoleArn string) (aws.CredentialsProvider, error) {
 	stsClient := sts.NewFromConfig(cfg)
+	assumeRoleCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
 	assumeRoleInput := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(assumeRoleArn),
 		RoleSessionName: aws.String("aws-infra-scaler"),
 	}
 
-	result, err := stsClient.AssumeRole(ctx, assumeRoleInput)
+	result, err := stsClient.AssumeRole(assumeRoleCtx, assumeRoleInput)
 	if err != nil {
 		return nil, err
 	}

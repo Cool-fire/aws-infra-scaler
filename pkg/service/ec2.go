@@ -29,7 +29,10 @@ func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.E
 		MinSize:              &minSize,
 	}
 
-	_, scaleError := ec2.Client.UpdateAutoScalingGroup(ctx, &input)
+	requestCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	_, scaleError := ec2.Client.UpdateAutoScalingGroup(requestCtx, &input)
 
 	if scaleError != nil {
 		return &ScalingError{
