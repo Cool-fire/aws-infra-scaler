@@ -26,7 +26,10 @@ func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingC
 		ScalingType:      types.ScalingTypeUniformScaling,
 	}
 
-	_, scaleError := k.Client.UpdateShardCount(ctx, &input)
+	requestCtx, cancel := withDefaultTimeout(ctx)
+	defer cancel()
+
+	_, scaleError := k.Client.UpdateShardCount(requestCtx, &input)
 	if scaleError != nil {
 		return &ScalingError{
 			ServiceName:  string(Kinesis),
