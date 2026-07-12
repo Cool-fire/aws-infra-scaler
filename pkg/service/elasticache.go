@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
+	"log"
 )
 
 type ElasticCacheEngine string
@@ -21,10 +22,19 @@ type ElasticCacheService struct {
 	Client *elasticache.Client
 }
 
-func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticCacheServiceScalingConfig, isScalingUp bool) *ScalingError {
+func (e ElasticCacheService) ScaleService(ctx context.Context, c config.ElasticCacheServiceScalingConfig, isScalingUp bool, dryRun bool) *ScalingError {
 	err := validateElasticCacheScalingConfig(c, isScalingUp, getElasticCacheEngine(c.Engine))
 	if err != nil {
 		return err
+	}
+
+	if dryRun {
+		action := "scale up"
+		if !isScalingUp {
+			action = "scale down"
+		}
+		log.Printf("dry-run: would %s ElasticCache cluster %s (%s) to nodeCount=%d", action, c.ClusterId, c.Engine, c.NodeCount)
+		return nil
 	}
 
 	switch c.Engine {

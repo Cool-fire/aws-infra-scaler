@@ -10,6 +10,7 @@ import (
 type Options struct {
 	scaleUpFlag   bool
 	scaleDownFlag bool
+	dryRunFlag    bool
 	configPath    string
 }
 
@@ -24,6 +25,7 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolVarP(&options.scaleUpFlag, "scale-up", "u", false, "Scale up")
 	rootCmd.PersistentFlags().BoolVarP(&options.scaleDownFlag, "scale-down", "d", false, "Scale down")
+	rootCmd.PersistentFlags().BoolVar(&options.dryRunFlag, "dry-run", false, "Log the scaling action without applying it")
 	rootCmd.PersistentFlags().StringVarP(&options.configPath, "config", "c", "config.yaml", "Config file path")
 
 	if options.configPath == "" {
@@ -37,7 +39,7 @@ var rootCmd = &cobra.Command{
 	Long: `AWS Auto Scaler CLI is a CLI tool to scale AWS infrastructure services via YAML config files,
 It is designed to scale AWS infrastructure services such as DynamoDB, Kinesis, Elasticache, EC2 etc.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		scalingResponse, err := pkg.ScaleApp(options.scaleUpFlag, options.configPath)
+		scalingResponse, err := pkg.ScaleApp(options.scaleUpFlag, options.dryRunFlag, options.configPath)
 		if err != nil {
 			log.Fatalf("error scaling app: %v", err)
 		}

@@ -6,6 +6,7 @@ import (
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
+	"log"
 )
 
 type KinesisService struct {
@@ -13,10 +14,15 @@ type KinesisService struct {
 	Client *kinesis.Client
 }
 
-func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig) *ScalingError {
+func (k KinesisService) ScaleService(ctx context.Context, kinesisServiceScalingConfig config.KinesisServiceScalingConfig, dryRun bool) *ScalingError {
 	err := validateKinesisScalingConfig(kinesisServiceScalingConfig)
 	if err != nil {
 		return err
+	}
+
+	if dryRun {
+		log.Printf("dry-run: would scale Kinesis stream %s to desiredShardCount=%d", kinesisServiceScalingConfig.StreamArn, kinesisServiceScalingConfig.DesiredShardCount)
+		return nil
 	}
 
 	targetShareCount := int32(kinesisServiceScalingConfig.DesiredShardCount)

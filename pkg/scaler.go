@@ -18,7 +18,7 @@ type ScalingResponse struct {
 
 var assumeRoleArn string
 
-func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
+func ScaleApp(shouldScaleUp bool, dryRun bool, configPath string) (*ScalingResponse, error) {
 
 	scalingConfig, err := config.ReadConfig(configPath)
 	if err != nil {
@@ -41,7 +41,7 @@ func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
 		fmt.Println("Scaling services...")
 		for _, scalingRegion := range scalingConfig.ScalingRegions {
 			wg.Add(1)
-			go scaleRegion(ctx, scalingRegion, shouldScaleUp, &wg, resultChan)
+			go scaleRegion(ctx, scalingRegion, shouldScaleUp, dryRun, &wg, resultChan)
 		}
 		wg.Wait()
 	}()
@@ -77,7 +77,7 @@ func ScaleApp(shouldScaleUp bool, configPath string) (*ScalingResponse, error) {
 	}
 }
 
-func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, shouldScaleUp bool, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
+func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, shouldScaleUp bool, dryRun bool, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
 	defer wg.Done()
 
 	var serviceWg sync.WaitGroup
@@ -96,13 +96,13 @@ func scaleRegion(ctx context.Context, scalingRegion config.ScalingRegion, should
 
 	for _, serviceScaleConfig := range scalingRegion.ServiceScaleConfigs {
 		serviceWg.Add(1)
-		go scaleService(ctx, awsCreds, serviceScaleConfig, shouldScaleUp, scalingRegion.Region, &serviceWg, resultChan)
+		go scaleService(ctx, awsCreds, serviceScaleConfig, shouldScaleUp, dryRun, scalingRegion.Region, &serviceWg, resultChan)
 	}
 
 	serviceWg.Wait()
 }
 
-func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, region string, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
+func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig interface{}, shouldScaleUp bool, dryRun bool, region string, wg *sync.WaitGroup, resultChan chan *service.ScalingError) {
 	defer wg.Done()
 
 	switch serviceScaleConfig.(type) {
@@ -114,7 +114,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 			Region: region,
 			Client: kinesisClient,
 		}
-		err := ks.ScaleService(ctx, kinesisClientConfig)
+		err := ks.ScaleService(ctx, kinesisClientConfig, dryRun)
 		if err != nil {
 			err.Region = region
 			resultChan <- err
@@ -129,7 +129,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 			Client: autoScalingClient,
 		}
 
-		err := ec2.ScaleService(ctx, ec2ClientConfig)
+		err := ec2.ScaleService(ctx, ec2ClientConfig, shouldScaleUp, dryRun)
 		if err != nil {
 			err.Region = region
 			resultChan <- err
@@ -144,7 +144,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 			Client: elasticCacheClient,
 		}
 
-		err := es.ScaleService(ctx, elasticCacheClientConfig, shouldScaleUp)
+		err := es.ScaleService(ctx, elasticCacheClientConfig, shouldScaleUp, dryRun)
 		if err != nil {
 			err.Region = region
 			resultChan <- err
@@ -159,7 +159,7 @@ func scaleService(ctx context.Context, awsCreds *aws.Config, serviceScaleConfig 
 			Client: appAutoScalingClient,
 		}
 
-		errs := ds.ScaleService(ctx, dynamoDBClientConfig)
+		errs := ds.ScaleService(ctx, dynamoDBClientConfig, dryRun)
 		if errs != nil {
 			for _, err := range errs {
 				err.Region = region
