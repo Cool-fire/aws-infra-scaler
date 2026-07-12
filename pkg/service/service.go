@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling"
@@ -10,6 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
+
+var loadDefaultConfig = config.LoadDefaultConfig
+
+var assumeRoleCredentials = assumeRoleCreds
 
 type Service string
 
@@ -38,13 +44,18 @@ func getServiceFromString(s string) Service {
 }
 
 func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	loadOptions := make([]func(*config.LoadOptions) error, 0, 1)
+	if profile := os.Getenv("AWS_PROFILE"); profile != "" {
+		loadOptions = append(loadOptions, config.WithSharedConfigProfile(profile))
+	}
+
+	cfg, err := loadDefaultConfig(ctx, loadOptions...)
 
 	if err != nil {
 		return nil, err
 	}
 
-	creds, err := assumeRoleCreds(ctx, cfg, assumeRoleArn)
+	creds, err := assumeRoleCredentials(ctx, cfg, assumeRoleArn)
 	if err != nil {
 		return nil, err
 	}
