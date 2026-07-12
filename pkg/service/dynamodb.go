@@ -6,6 +6,7 @@ import (
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling"
 	"github.com/aws/aws-sdk-go-v2/service/applicationautoscaling/types"
+	"log"
 	"sync"
 )
 
@@ -20,11 +21,17 @@ type DynamoDBService struct {
 	Client *applicationautoscaling.Client
 }
 
-func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig) []*ScalingError {
+func (ds DynamoDBService) ScaleService(ctx context.Context, dynamodbClientConfig config.DynamoDBServiceScalingConfig, dryRun bool) []*ScalingError {
 	err := validateDynamoDBScalingConfig(dynamodbClientConfig)
 	if err != nil {
 		return []*ScalingError{err}
 	}
+
+	if dryRun {
+		log.Printf("dry-run: would scale DynamoDB table %s to rcu[min=%d max=%d] wcu[min=%d max=%d]", dynamodbClientConfig.TableName, dynamodbClientConfig.RCU.MinProvisionedCapacity, dynamodbClientConfig.RCU.MaxProvisionedCapacity, dynamodbClientConfig.WCU.MinProvisionedCapacity, dynamodbClientConfig.WCU.MaxProvisionedCapacity)
+		return nil
+	}
+
 	applicationAutoscalingClient = ds.Client
 
 	errChan := make(chan *ScalingError)

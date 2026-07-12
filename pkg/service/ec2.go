@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"github.com/Cool-fire/aws-infra-scaler/pkg/config"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
+	"log"
 )
+
+type autoScalingAPI interface {
+	UpdateAutoScalingGroup(ctx context.Context, params *autoscaling.UpdateAutoScalingGroupInput, optFns ...func(*autoscaling.Options)) (*autoscaling.UpdateAutoScalingGroupOutput, error)
+}
 
 type EC2Service struct {
 	Region string
-	Client *autoscaling.Client
+	Client autoScalingAPI
 }
 
-func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig) *ScalingError {
+func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.EC2ServiceScalingConfig, shouldScaleUp bool, dryRun bool) *ScalingError {
 	err := validateEc2ScalingConfig(ec2ClientConfig)
 	if err != nil {
 		return err
@@ -27,6 +32,16 @@ func (ec2 EC2Service) ScaleService(ctx context.Context, ec2ClientConfig config.E
 		DesiredCapacity:      &desiredCapacity,
 		MaxSize:              &maxSize,
 		MinSize:              &minSize,
+	}
+
+	action := "scale up"
+	if !shouldScaleUp {
+		action = "scale down"
+	}
+
+	if dryRun {
+		log.Printf("dry-run: would %s EC2 Auto Scaling group %s to min=%d desired=%d max=%d", action, ec2ClientConfig.AsgName, ec2ClientConfig.MinCount, ec2ClientConfig.DesiredCount, ec2ClientConfig.MaxCount)
+		return nil
 	}
 
 	_, scaleError := ec2.Client.UpdateAutoScalingGroup(ctx, &input)
