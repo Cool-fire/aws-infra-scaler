@@ -38,7 +38,7 @@ func getServiceFromString(s string) Service {
 }
 
 func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := loadDefaultConfig(ctx, region)
 
 	if err != nil {
 		return nil, err
@@ -53,6 +53,14 @@ func NewConfig(ctx context.Context, region string, assumeRoleArn string) (*aws.C
 	cfg.Region = region
 
 	return &cfg, nil
+}
+
+func loadDefaultConfig(ctx context.Context, region string) (aws.Config, error) {
+	if region == "" {
+		return config.LoadDefaultConfig(ctx)
+	}
+
+	return config.LoadDefaultConfig(ctx, config.WithRegion(region))
 }
 
 func assumeRoleCreds(ctx context.Context, cfg aws.Config, assumeRoleArn string) (aws.CredentialsProvider, error) {
