@@ -19,3 +19,15 @@ func TestLoadDefaultConfigUsesScalingRegionWhenEnvRegionMissing(t *testing.T) {
 		t.Fatalf("expected region us-east-1, got %q", cfg.Region)
 	}
 }
+
+func TestLoadDefaultConfigKeepsDefaultChainWhenRegionEmpty(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	t.Setenv("AWS_DEFAULT_REGION", "")
+	t.Setenv("AWS_PROFILE", "test-profile")
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+
+	_, err := loadDefaultConfig(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected missing profile error")
+	}
+}
